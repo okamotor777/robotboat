@@ -1,0 +1,5 @@
+<!-- roboteq driver -->
+<launch>
+  <node pkg="boat_roboteq" type="boat_roboteq_driver.py" name="boat_roboteq_driver" output="screen"/> 
+
+</launch>
