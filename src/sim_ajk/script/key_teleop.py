@@ -102,7 +102,9 @@ def input():
         return None   
 
 if __name__=="__main__":
-    pub = rospy.Publisher('/sim_ajk/diff_drive_controller/cmd_vel', Twist, queue_size = 1)
+    #pub = rospy.Publisher('/sim_ajk/diff_drive_controller/cmd_vel', Twist, queue_size = 1)
+    pub = rospy.Publisher('/roboteq_driver/cmd', Twist, queue_size = 1)
+
     rospy.init_node('teleop_twist_keyboard')
     pub_str = rospy.Publisher('/straight_str', String, queue_size = 1)
     manual_str = "ready to sanyo_keyboard_teleop\n\rw:forward, a:left, s:backward, d:right\n\re:r_forward, q:l_forward, z:l_backward, c:r_backward\n\ri:linear speed increase, o:decrease\n\rk:angular speed increase, l:decrease\n\r0:exit"
