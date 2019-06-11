@@ -18,6 +18,7 @@ from look_ahead.msg import AJK_value
 from look_ahead.msg import Auto_Log
 from mavlink_ajk.msg import MAV_Mission
 from mavlink_ajk.msg import MAV_Modes
+from ubx_analyzer.msg import NavPVT
 
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
@@ -78,6 +79,9 @@ class look_ahead():
         self.base_mode = 0
         self.custom_mode = 0
 
+        # gnss
+        self.iTOW = 0
+
         rospy.init_node('look_ahead_following')
         rospy.on_shutdown(self.shutdown)
 
@@ -86,11 +90,12 @@ class look_ahead():
         #rospy.Subscriber('/gazebo/model_states', ModelStates, self.truth_callback)
         rospy.Subscriber('/mav/mission', MAV_Mission, self.load_waypoint)
         rospy.Subscriber('/mav/modes', MAV_Modes, self.mav_modes)
+        rospy.Subscriber('/navpvt', NavPVT, self.navpvt_callback, queue_size = 1)
         self.ajk_pub = rospy.Publisher('/ajk_auto', AJK_value, queue_size = 1)
         self.ajk_value = AJK_value()
         self.auto_log_pub = rospy.Publisher('/auto_log', Auto_Log, queue_size = 1)
         self.auto_log = Auto_Log()
-        self.cmdvel_pub = rospy.Publisher('/sim_ajk/diff_drive_controller/cmd_vel', Twist, queue_size = 1)
+        self.cmdvel_pub = rospy.Publisher('/auto/cmd_vel', Twist, queue_size = 1)
         self.cmdvel = Twist()
 
     def odom_callback(self, msg):
@@ -148,6 +153,9 @@ class look_ahead():
         self.base_mode = msg.base_mode
         self.custom_mode = msg.custom_mode
 
+    def navpvt_callback(self, msg):
+        self.iTOW = msg.iTOW
+
     def cmdvel_publisher(self, steering_ang, translation, pi):
         if abs(steering_ang) > yaw_tolerance and self.bool_start_point == False:
             if steering_ang >= 0:
@@ -163,6 +171,11 @@ class look_ahead():
             else:
                 self.cmdvel.linear.x = 0
                 self.cmdvel.angular.z = CMD_ANGULAR_RIGHT
+            if pivot_count > MAX_PIVOT_COUNT:
+                pivot_count = 0
+                self.bool_start_point == False
+            if abs(steering_ang) < yaw_tolerance_onstart:
+                pivot_count = pivot_count + 1 
         else:
             self.cmdvel.linear.x = CMD_LINEAR_OPT*translation
             self.cmdvel.angular.z = pi *CMD_ANGULAR_K
@@ -263,60 +276,18 @@ class look_ahead():
             if abs(own_y_tf) < I_CONTROL_DIST:
                 pi_value = p - i
                 
-            #self.pre_steering_ang = steering_ang
-
-            ajk_steering = STEERING_NEUTRAL +LR_OPTIMUM *pi_value
-            if translation < 0:
-                ajk_steering = STEERING_NEUTRAL -LR_OPTIMUM *pi_value 
-            ajk_translation = TRANSLATION_NEUTRAL +FB_OPTIMUM *translation
-
-            # Restriction of ajk_steering
-            if ajk_steering > TRANSLATION_NEUTRAL + LR_OPTIMUM:
-                   ajk_steering = TRANSLATION_NEUTRAL + LR_OPTIMUM
-            elif ajk_steering < TRANSLATION_NEUTRAL - LR_OPTIMUM:
-                  ajk_steering = TRANSLATION_NEUTRAL - LR_OPTIMUM
-
-            # If the yaw error is large, start pivot turn.
-            # When the path has just changed(self.bool_start_point is True), start to larger pivot turn.
-            #
-            # An upper limit is provided to avoid situation where only a pivot turn is made.
-            if abs(steering_ang) > yaw_tolerance and self.bool_start_point == False:
-                if steering_ang >= 0:
-                    self.ajk_value.stamp = rospy.Time.now()
-                    self.ajk_value.translation = TRANSLATION_NEUTRAL
-                    self.ajk_value.steering = LEFT_PIVOT
-                else:
-                    self.ajk_value.stamp = rospy.Time.now()
-                    self.ajk_value.translation = TRANSLATION_NEUTRAL
-                    self.ajk_value.steering = RIGHT_PIVOT
-            elif abs(steering_ang) > yaw_tolerance_onstart and self.bool_start_point == True:
-                if steering_ang >= 0:
-                    self.ajk_value.stamp = rospy.Time.now()
-                    self.ajk_value.translation = TRANSLATION_NEUTRAL
-                    self.ajk_value.steering = LEFT_PIVOT                    
-                else:
-                    self.ajk_value.stamp = rospy.Time.now()
-                    self.ajk_value.translation = TRANSLATION_NEUTRAL
-                    self.ajk_value.steering = RIGHT_PIVOT
-                if pivot_count > MAX_PIVOT_COUNT:
-                    pivot_count = 0
-                    self.bool_start_point == False
-                else:
-                    pivot_count = pivot_count + 1                   
-            else:
-                self.ajk_value.stamp = rospy.Time.now()
-                self.ajk_value.translation = ajk_translation
-                self.ajk_value.steering = ajk_steering
-            self.ajk_pub.publish(self.ajk_value)
-
             # for simulator
             self.cmdvel_publisher(steering_ang, translation, pi_value)
 
             # publish autonomous log
             self.auto_log.stamp = rospy.Time.now()
+            self.auto_log.iTOW = self.iTOW          
+
             self.auto_log.waypoint_seq = seq
-            self.auto_log.waypoint_x = self.waypoint_x[seq]
-            self.auto_log.waypoint_y = self.waypoint_y[seq]
+            self.auto_log.waypoint_start_x = self.waypoint_x[seq-1]
+            self.auto_log.waypoint_start_y = self.waypoint_y[seq-1]
+            self.auto_log.waypoint_end_x = self.waypoint_x[seq]
+            self.auto_log.waypoint_end_y = self.waypoint_y[seq]
             self.auto_log.own_x = own_x
             self.auto_log.own_y = own_y
             self.auto_log.own_yaw = euler_from_quaternion(front_q)[2]/np.pi *180
@@ -334,8 +305,8 @@ class look_ahead():
             self.auto_log.p = p
             self.auto_log.i = i
             self.auto_log.steering_ang = steering_ang
-            self.auto_log.translation = self.ajk_value.translation
-            self.auto_log.steering = self.ajk_value.steering
+            self.auto_log.linear_x = self.cmdvel.linear.x
+            self.auto_log.angular_z = self.cmdvel.angular.z
             self.auto_log_pub.publish(self.auto_log)
 
             # when reaching the look-ahead distance, read the next waypoint.
