@@ -4,7 +4,7 @@ After=ip_checker.service
 Requires=ip_checker.service
 
 [Service]
-User=rosusb
+User=admin
 ExecStartPre=/bin/bash -l -c 'source ~/.bash_profile'
 ExecStart=/usr/bin/screen -S roscore -ADm bash -l -c 'roscore'
 Type=simple

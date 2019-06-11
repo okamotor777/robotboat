@@ -1,15 +1,15 @@
 [Unit]
-Description=moving_base launcher
+Description=mavlink_ajk launcher
 After=roscore.service
 Requires=roscore.service
 
 [Service]
-User=ubuntu
+User=admin
 ExecStartPre=/bin/bash -l -c 'rostopic list'
-ExecStart=/usr/bin/screen -S moving_base -ADm bash -l -c 'roslaunch ubx_analyzer jetson_moving_base.launch'
+ExecStart=/usr/bin/screen -S mavlink_ajk -ADm bash -l -c 'roslaunch mavlink_ajk mavlink_ajk.launch'
 Type=simple
 Restart=always
-RestartSec=5s
+RestartSec=1s
 
 [Install]
 WantedBy=multi-user.target

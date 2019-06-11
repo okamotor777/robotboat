@@ -1,12 +1,12 @@
 [Unit]
-Description=moving_base launcher
+Description=look_ahead launcher
 After=roscore.service
 Requires=roscore.service
 
 [Service]
-User=rosusb
+User=admin
 ExecStartPre=/bin/bash -l -c 'rostopic list'
-ExecStart=/usr/bin/screen -S moving_base -ADm bash -l -c 'roslaunch ubx_analyzer jetson_moving_base.launch'
+ExecStart=/usr/bin/screen -S look_ahead -ADm bash -l -c 'roslaunch look_ahead qgc_look_ahead.launch'
 Type=simple
 Restart=always
 RestartSec=5s

@@ -4,7 +4,7 @@ After=roscore.service
 Requires=roscore.service
 
 [Service]
-User=ubuntu
+User=admin
 ExecStartPre=/bin/bash -l -c 'rostopic list'
 ExecStart=/usr/bin/screen -S qgc_param_command -ADm bash -l -c 'roslaunch mavlink_ajk qgc_param_command.launch'
 Type=simple

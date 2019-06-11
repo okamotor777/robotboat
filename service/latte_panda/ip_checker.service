@@ -4,7 +4,7 @@ After=networking.service
 Requires=networking.service
 
 [Service]
-User=rosusb
+User=admin
 ExecStart=/usr/bin/screen -S ip-checker -ADm bash -l -c 'python ~/catkin_ajk/service/ip_checker.py'
 Type=simple
 Restart=always

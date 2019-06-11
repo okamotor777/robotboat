@@ -1,9 +1,10 @@
 source ${HOME}/.bashrc
 source /opt/ros/kinetic/setup.bash
-source ${HOME}/catkin_ajk/devel/setup.bash
+source ${HOME}/robotboat/devel/setup.bash
 
 export ROS_MASTER_URI=http://${ROS_HOSTNAME}:11311/
-myIP=$(hostname -I)
+myIP=$(ip addr show tun0 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | grep -o [0-9].*)
+#myIP=$(hostname -I)
 export ROS_IP=${myIP}
 
 #myIP=$(ip addr show wlp2s0 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | grep -o [0-9].*)
