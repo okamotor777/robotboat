@@ -19,6 +19,7 @@ from look_ahead.msg import Auto_Log
 from mavlink_ajk.msg import MAV_Mission
 from mavlink_ajk.msg import MAV_Modes
 from ubx_analyzer.msg import NavPVT
+from ubx_analyzer.msg import RELPOSNED
 
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
@@ -96,6 +97,7 @@ class look_ahead():
         rospy.Subscriber('/mav/mission', MAV_Mission, self.load_waypoint)
         rospy.Subscriber('/mav/modes', MAV_Modes, self.mav_modes)
         rospy.Subscriber('/navpvt', NavPVT, self.navpvt_callback, queue_size = 1)
+        rospy.Subscriber('/relposned', RELPOSNED, self.relposned_callback, queue_size = 1)
         self.ajk_pub = rospy.Publisher('/ajk_auto', AJK_value, queue_size = 1)
         self.ajk_value = AJK_value()
         self.auto_log_pub = rospy.Publisher('/auto_log', Auto_Log, queue_size = 1)
@@ -162,6 +164,9 @@ class look_ahead():
     def navpvt_callback(self, msg):
         self.iTOW = msg.iTOW
         self.rtk_status = msg.fix_status
+
+    def self.relposned_callback(self, msg):
+        self.movingbase_status = msg.fix_status
 
     def cmdvel_publisher(self, steering_ang, translation, pi):
         if abs(steering_ang) > yaw_tolerance and self.bool_start_point == False:
