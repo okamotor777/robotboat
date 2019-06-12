@@ -42,11 +42,10 @@ FB_OPTIMUM = 220
 LR_OPTIMUM = 60
 
 # for simulator or test vehicle
-CMD_LINEAR_OPT = 0.55
-CMD_ANGULAR_RIGHT = -0.5
-CMD_ANGULAR_LEFT = 0.5
-CMD_ANGULAR_K = 0.5
-CMD_ANGULAR_LIMIT = 1
+CMD_LINEAR_OPT = 1.0
+CMD_ANGULAR_RIGHT = 1.0
+CMD_ANGULAR_LEFT = 1.0
+CMD_ANGULAR_LIMIT = 2
 
 # frequency [Hz]
 frequency = 10
@@ -155,7 +154,7 @@ class look_ahead():
                 self.cmdvel.angular.z = CMD_ANGULAR_RIGHT
         else:
             self.cmdvel.linear.x = CMD_LINEAR_OPT*translation
-            self.cmdvel.angular.z = pid *CMD_ANGULAR_K
+            self.cmdvel.angular.z = pid
 
         # Angular limit
         if self.cmdvel.angular.z > CMD_ANGULAR_LIMIT:

@@ -1,6 +1,8 @@
 #
 time stamp
 float64 iTOW
+uint8 rtk_status
+uint8 movingbase_status
 
 uint32 waypoint_seq
 float64 waypoint_start_x

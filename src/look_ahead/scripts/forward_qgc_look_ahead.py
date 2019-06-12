@@ -45,10 +45,9 @@ FB_OPTIMUM = 220
 LR_OPTIMUM = 60
 
 # for simulator or test vehicle
-CMD_LINEAR_OPT = 0.55
-CMD_ANGULAR_RIGHT = -0.5
-CMD_ANGULAR_LEFT = 0.5
-CMD_ANGULAR_K = 0.5
+CMD_LINEAR_OPT = 0.2
+CMD_ANGULAR_RIGHT = -1
+CMD_ANGULAR_LEFT = 1
 CMD_ANGULAR_LIMIT = 1
 
 # frequency [Hz]
@@ -86,6 +85,7 @@ class look_ahead():
         # gnss
         self.iTOW = 0
         self.rtk_status = 0
+        self.movingbase_status = 0
 
         rospy.init_node('look_ahead_following')
         rospy.on_shutdown(self.shutdown)
@@ -100,7 +100,8 @@ class look_ahead():
         self.ajk_value = AJK_value()
         self.auto_log_pub = rospy.Publisher('/auto_log', Auto_Log, queue_size = 1)
         self.auto_log = Auto_Log()
-        self.cmdvel_pub = rospy.Publisher('/auto/cmd_vel', Twist, queue_size = 1)
+        #self.cmdvel_pub = rospy.Publisher('/auto/cmd_vel', Twist, queue_size = 1)
+        self.cmdvel_pub = rospy.Publisher('/sim_ajk/diff_drive_controller/cmd_vel', Twist, queue_size = 1)
         self.cmdvel = Twist()
 
     def odom_callback(self, msg):
@@ -177,20 +178,26 @@ class look_ahead():
             else:
                 self.cmdvel.linear.x = 0
                 self.cmdvel.angular.z = CMD_ANGULAR_RIGHT
-            if pivot_count > MAX_PIVOT_COUNT:
-                pivot_count = 0
+            if self.pivot_count > MAX_PIVOT_COUNT:
+                self.pivot_count = 0
                 self.bool_start_point == False
             if abs(steering_ang) < yaw_tolerance_onstart:
-                pivot_count = pivot_count + 1 
+                self.pivot_count = self.pivot_count + 1 
         else:
             self.cmdvel.linear.x = CMD_LINEAR_OPT*translation
-            self.cmdvel.angular.z = pi *CMD_ANGULAR_K
+            self.cmdvel.angular.z = pi
 
         # Angular limit
         if self.cmdvel.angular.z > CMD_ANGULAR_LIMIT:
             self.cmdvel.angular.z = CMD_ANGULAR_LIMIT
         elif self.cmdvel.angular.z < -CMD_ANGULAR_LIMIT:
             self.cmdvel.angular.z = -CMD_ANGULAR_LIMIT
+
+        # emergency stop
+        if self.rtk_status < FIXED_NUM:
+            self.cmdvel.linear.x = 0
+            self.cmdvel.angular.z = 0
+            
         self.cmdvel_pub.publish(self.cmdvel)
 
     def shutdown(self):
@@ -202,7 +209,8 @@ class look_ahead():
         KP = 0
         KI = 0
         look_ahead_dist = 0
-        pivot_count = 0
+        self.pivot_count = 0
+        flip_flag = 1
         while not rospy.is_shutdown():
             # mission checker
             if self.waypoint_total_seq != len(self.waypoint_seq) or self.waypoint_total_seq == 0:
@@ -215,11 +223,6 @@ class look_ahead():
             if self.mission_start != True or self.base_mode != ARDUPILOT_AUTO_BASE \
             or self.custom_mode != ARDUPILOT_AUTO_CUSTOM:
                 rospy.loginfo("mission_start_checker")
-                time.sleep(1)
-                continue
-
-            if self.rtk_stauts < FIXED_NUM: 
-                rospy.loginfo("GNSS status is wrong")
                 time.sleep(1)
                 continue
 
@@ -263,6 +266,12 @@ class look_ahead():
             front_q_tf = quaternion_multiply((front_q[0], front_q[1], front_q[2], front_q[3]), 
                                              (   tf_q[0],    tf_q[1],    tf_q[2],   -tf_q[3]))
 
+            # inverted
+            rear_q_tf = np.empty(4)
+            rear_q_tf[0] = front_q_tf[0]
+            rear_q_tf[1] = front_q_tf[1]
+            rear_q_tf[2] = front_q_tf[3]
+            rear_q_tf[3] = -front_q_tf[2]
 
             # calculate the target-angle(bearing) using look-ahead distance
             bearing = np.arctan2(-own_y_tf, look_ahead_dist)
@@ -271,13 +280,14 @@ class look_ahead():
             # calculate the minimal yaw error, and decide the forward or backward
             front_steering_q = quaternion_multiply(( bearing_q[0],  bearing_q[1],  bearing_q[2],  bearing_q[3]),
                                                    (front_q_tf[0], front_q_tf[1], front_q_tf[2], -front_q_tf[3]))
+            rear_steering_q = quaternion_multiply((bearing_q[0], bearing_q[1], bearing_q[2], bearing_q[3]),
+                                                  (rear_q_tf[0], rear_q_tf[1], rear_q_tf[2], -rear_q_tf[3]))
 
             front_steering_ang = euler_from_quaternion(front_steering_q)[2]/np.pi *180
+            rear_steering_ang = euler_from_quaternion(rear_steering_q)[2]/np.pi *180
 
             steering_ang = front_steering_ang
             translation = FORWARD_CONST
-
-            #print steering_ang/np.pi*180.0
 
             # calculate the steering_value
             p = KP *steering_ang
@@ -286,13 +296,15 @@ class look_ahead():
             pi_value = p
             if abs(own_y_tf) < I_CONTROL_DIST:
                 pi_value = p - i
-                
+              
             # for simulator
             self.cmdvel_publisher(steering_ang, translation, pi_value)
 
             # publish autonomous log
             self.auto_log.stamp = rospy.Time.now()
-            self.auto_log.iTOW = self.iTOW          
+            self.auto_log.iTOW = self.iTOW
+            self.auto_log.rtk_status = self.rtk_status
+            self.auto_log.movingbase_status = self.movingbase_status
 
             self.auto_log.waypoint_seq = seq
             self.auto_log.waypoint_start_x = self.waypoint_x[seq-1]
@@ -337,6 +349,7 @@ class look_ahead():
 
                     if np.linalg.norm(a-b) < SPACING:
                         seq = seq + 1
+                        flip_flag = flip_flag * -1
                 except IndexError:
                     pass
 
