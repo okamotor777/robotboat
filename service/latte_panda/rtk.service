@@ -6,7 +6,7 @@ Requires=roscore.service
 [Service]
 User=admin
 ExecStartPre=/bin/bash -l -c 'rostopic list'
-ExecStart=/usr/bin/screen -S rtk -ADm bash -l -c 'roslaunch ubx_analyzer jetson_pvthp.launch'
+ExecStart=/usr/bin/screen -S rtk -ADm bash -l -c 'roslaunch ubx_analyzer ntrip_pvthp.launch'
 Type=simple
 Restart=always
 RestartSec=5s

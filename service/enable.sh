@@ -1,4 +1,5 @@
 sudo systemctl enable ip_checker.service
+sudo systemctl enable ntrip.service
 sudo systemctl enable look_ahead.service
 sudo systemctl enable mavlink_ajk.service
 sudo systemctl enable moving_base.service
