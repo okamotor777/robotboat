@@ -3,9 +3,6 @@
   <node pkg="ntrip" type="ntrip.py" name="ntrip" output="screen" respawn="true">
     <rosparam file="$(arg config_file)" command="load"/>
   </node>
-  <node pkg="ntrip" type="ntrip.py" name="ntrip" output="screen" respawn="true">
-    <rosparam file="$(arg config_file)" command="load"/>
-  </node>
 </launch>
 
 
