@@ -16,9 +16,10 @@ lastSwitchVal = 0
 RCmode = 2
 
 # begin the connection to the roboteq controller
+port = rospy.get_param('~port', '/dev/serial/by-path/pci-0000:00:14.0-usb-0:3.2.4:1.0')
 try:
     ser = serial.Serial(
-        port='/dev/serial/by-path/pci-0000:00:14.0-usb-0:2:1.0',
+        port,
         baudrate=115200, #8N1
         parity=serial.PARITY_NONE,
         stopbits=serial.STOPBITS_ONE,

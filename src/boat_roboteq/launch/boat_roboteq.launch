@@ -1,5 +1,7 @@
 <!-- roboteq driver -->
 <launch>
-  <node pkg="boat_roboteq" type="boat_roboteq_driver.py" name="boat_roboteq_driver" output="screen"/> 
-
+  <arg name="config_file" default="$(find boat_roboteq)/config/boat_roboteq.yaml"/> 
+  <node pkg="boat_roboteq" type="boat_roboteq_driver.py" name="boat_roboteq_driver" output="screen">
+      <rosparam file="$(arg config_file)" command="load"/>
+  </node>
 </launch>
