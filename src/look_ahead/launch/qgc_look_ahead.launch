@@ -1,4 +1,4 @@
 <launch>
-  <node pkg="look_ahead" type="qgc_look_ahead.py" name="qgc_look_ahead" output="screen" respawn="true">
+  <node pkg="look_ahead" type="forward_qgc_look_ahead.py" name="qgc_look_ahead" output="screen" respawn="true">
   </node>
 </launch>

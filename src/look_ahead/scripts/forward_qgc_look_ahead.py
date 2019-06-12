@@ -27,7 +27,7 @@ from tf.transformations import quaternion_multiply
 SPACING = 0.6       # distance between lines 
 x_tolerance = 0.1  # [meter]
 yaw_tolerance = 40.0 # [Degree]
-yaw_tolerance_onstart = 5.0 # [Degree]
+yaw_tolerance_onstart = 15.0 # [Degree]
 
 I_CONTROL_DIST = 0.1 # [meter], refer to cross_track_error 
 MAX_PIVOT_COUNT = 1
@@ -59,6 +59,10 @@ MAV_CMD_NAV_WAYPOINT = 16
 ARDUPILOT_AUTO_BASE = 217
 ARDUPILOT_AUTO_CUSTOM = 10
 
+# RTK fix status
+FIXED_NUM = 2
+FLOAT_NUM = 1
+
 class look_ahead():
     def __init__(self):
         self.waypoint_x = []
@@ -81,6 +85,7 @@ class look_ahead():
 
         # gnss
         self.iTOW = 0
+        self.rtk_status = 0
 
         rospy.init_node('look_ahead_following')
         rospy.on_shutdown(self.shutdown)
@@ -155,6 +160,7 @@ class look_ahead():
 
     def navpvt_callback(self, msg):
         self.iTOW = msg.iTOW
+        self.rtk_status = msg.fix_status
 
     def cmdvel_publisher(self, steering_ang, translation, pi):
         if abs(steering_ang) > yaw_tolerance and self.bool_start_point == False:
@@ -209,6 +215,11 @@ class look_ahead():
             if self.mission_start != True or self.base_mode != ARDUPILOT_AUTO_BASE \
             or self.custom_mode != ARDUPILOT_AUTO_CUSTOM:
                 rospy.loginfo("mission_start_checker")
+                time.sleep(1)
+                continue
+
+            if self.rtk_stauts < FIXED_NUM: 
+                rospy.loginfo("GNSS status is wrong")
                 time.sleep(1)
                 continue
 
@@ -315,6 +326,10 @@ class look_ahead():
                 pre_wp_y = self.waypoint_y[seq]
                 seq = seq + 1
                 self.bool_start_point = True # Since mission changed to the next path, the start_point flag 
+                self.cmdvel.linear.x = 0
+                self.cmdvel.angular.z = 0
+                self.cmdvel_pub.publish(self.cmdvel)
+
                                              # was changed to True.
                 try:
                     a = np.array([pre_wp_x, pre_wp_y])
