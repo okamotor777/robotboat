@@ -237,7 +237,14 @@ class ublox():
             self.navpvt_data.hAcc = hAcc
             self.navpvt_data.vAcc = vAcc
             self.navpvt_data.pDOP = pDOP
-            self.navpvt_data
+
+            self.navpvt_data.velN = velN
+            self.navpvt_data.velE = velE
+            self.navpvt_data.velD = velD
+            self.navpvt_data.headMot = headMot
+            self.navpvt_data.sAcc = sAcc
+            self.navpvt_data.headAcc = headAcc
+            self.navpvt_data.headAcc = headVeh
             self.pub_navpvt.publish(self.navpvt_data)            
 
             # print section
