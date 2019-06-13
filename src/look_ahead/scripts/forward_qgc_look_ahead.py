@@ -25,7 +25,7 @@ from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_quaternion
 from tf.transformations import quaternion_multiply
 
-SPACING = 0.6       # distance between lines 
+SPACING = 0.8       # distance between lines 
 x_tolerance = 0.1  # [meter]
 yaw_tolerance = 40.0 # [Degree]
 yaw_tolerance_onstart = 15.0 # [Degree]
@@ -102,8 +102,8 @@ class look_ahead():
         self.ajk_value = AJK_value()
         self.auto_log_pub = rospy.Publisher('/auto_log', Auto_Log, queue_size = 1)
         self.auto_log = Auto_Log()
-        #self.cmdvel_pub = rospy.Publisher('/auto/cmd_vel', Twist, queue_size = 1)
-        self.cmdvel_pub = rospy.Publisher('/sim_ajk/diff_drive_controller/cmd_vel', Twist, queue_size = 1)
+        self.cmdvel_pub = rospy.Publisher('/roboteq_driver/cmd', Twist, queue_size = 1)
+        #self.cmdvel_pub = rospy.Publisher('/sim_ajk/diff_drive_controller/cmd_vel', Twist, queue_size = 1)
         self.cmdvel = Twist()
 
     def odom_callback(self, msg):
@@ -199,7 +199,7 @@ class look_ahead():
             self.cmdvel.angular.z = -CMD_ANGULAR_LIMIT
 
         # emergency stop
-        if self.rtk_status < FIXED_NUM:
+        if self.rtk_status < FIXED_NUM or self.movingbase_status < FIXED_NUM:
             self.cmdvel.linear.x = 0
             self.cmdvel.angular.z = 0
             
@@ -213,7 +213,10 @@ class look_ahead():
         seq = 1
         KP = 0
         KI = 0
+        KD = 0
+        d = 0
         look_ahead_dist = 0
+        self.last_steering_ang = 0
         self.pivot_count = 0
         flip_flag = 1
         while not rospy.is_shutdown():
@@ -242,6 +245,7 @@ class look_ahead():
             # get the parameters of look-ahead control
             KP = rospy.get_param("/mavlink_ajk/Kp")
             KI = rospy.get_param("/mavlink_ajk/Ki")
+            KD = rospy.get_param("/mavlink_ajk/Kd")
             look_ahead_dist = rospy.get_param("/mavlink_ajk/look_ahead")
 
             # waypoint with xy coordinate origin adjust
@@ -297,10 +301,15 @@ class look_ahead():
             # calculate the steering_value
             p = KP *steering_ang
             i = KI *own_y_tf
+            d = KD *(self.last_steering_ang - steering_ang)
+            self.last_steering_ang = steering_ang
 
             pi_value = p
             if abs(own_y_tf) < I_CONTROL_DIST:
                 pi_value = p - i
+
+            pi_value = pi_value - d
+            
               
             # for simulator
             self.cmdvel_publisher(steering_ang, translation, pi_value)
@@ -328,10 +337,12 @@ class look_ahead():
 
             self.auto_log.Kp = KP
             self.auto_log.Ki = KI
+            self.auto_log.Kd = KD
             self.auto_log.look_ahead_dist = look_ahead_dist
 
             self.auto_log.p = p
             self.auto_log.i = i
+            self.auto_log.d = d
             self.auto_log.steering_ang = steering_ang
             self.auto_log.linear_x = self.cmdvel.linear.x
             self.auto_log.angular_z = self.cmdvel.angular.z
