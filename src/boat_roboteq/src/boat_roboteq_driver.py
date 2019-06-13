@@ -15,8 +15,11 @@ lastSwitchVal = 0
 # rcmode global variable
 RCmode = 2
 
+MAX_SPEED = 2000
+MAX_TURN = 2000
+
 # begin the connection to the roboteq controller
-port = rospy.get_param('~port', '/dev/serial/by-path/pci-0000:00:14.0-usb-0:3.2.4:1.0')
+port = rospy.get_param('~port', '/dev/serial/by-path/pci-0000:00:14.0-usb-0:3.3.4:1.0')
 try:
     ser = serial.Serial(
         port,
@@ -38,21 +41,21 @@ ser.open()
 # returns nothing
 def moveCallback(data):
     if (abs(data.linear.x) > 0.001 or abs(data.angular.z) > 0.001):
-        speed = data.linear.x *1000 #linear.x is value between -1 and 1 and input to wheels is between -1000 and 1000
-        if speed > 1000:
-            speed = 1000
-        elif speed < -1000:
-            speed = -1000
+        speed = data.linear.x *MAX_SPEED #linear.x is value between -1 and 1 and input to wheels is between -1000 and 1000
+        if speed > MAX_SPEED:
+            speed = MAX_SPEED
+        elif speed < -MAX_SPEED:
+            speed = -MAX_SPEED
                                             #1000 would give full speed range, but setting to lower value to better control robot
-        turn = (data.angular.z + 0.009)*700*-1
-        if turn > 1000:
-            turn = 1000
-        elif turn < -1000:
-            turn = -1000
+        turn = (data.angular.z + 0.009)*MAX_TURN*-1
+        if turn > MAX_TURN:
+            turn = MAX_TURN
+        elif turn < -MAX_TURN:
+            turn = -MAX_TURN
 
         cmd = '!G 1 ' + str(-speed) + '\r'
         ser.write(cmd)
-        cmd = '!G 2 ' + str(-turn) + '\r'
+        cmd = '!G 2 ' + str(turn) + '\r'
         ser.write(cmd)
 
 if __name__ == "__main__":
