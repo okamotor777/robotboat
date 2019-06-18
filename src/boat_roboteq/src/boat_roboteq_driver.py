@@ -15,11 +15,11 @@ lastSwitchVal = 0
 # rcmode global variable
 RCmode = 2
 
-MAX_SPEED = 2000
-MAX_TURN = 2000
+MAX_SPEED = 1200
+MAX_TURN = 1200
 
 # begin the connection to the roboteq controller
-port = rospy.get_param('~port', '/dev/serial/by-path/pci-0000:00:14.0-usb-0:3.3.4:1.0')
+port = rospy.get_param('~port', '/dev/serial/by-path/pci-0000:00:14.0-usb-0:2:1.0')
 try:
     ser = serial.Serial(
         port,
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     rospy.init_node('igvc_roboteq', anonymous=True)
 
     # start the cmd_vel subscriber
-    rospy.Subscriber("roboteq_driver/cmd", Twist, moveCallback)
+    rospy.Subscriber("roboteq_driver/cmd", Twist, moveCallback, queue_size=1)
     try:
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():

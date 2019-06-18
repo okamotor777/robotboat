@@ -1,2 +1,3 @@
-{Kd: 0.0, Ki: 100, Kp: 0.15000000596046448, ajk_engine: 0.0, look_ahead: 1.2999999523162842,
-  param_path: /home/nouki/catkin_ajk/src/mavlink_ajk/param/ajk_param.yaml, shutdown: 0}
+{Kd: 0.30000001192092896, Ki: 0.10000000149011612, Kp: 0.019999999552965164, ajk_engine: 0.0,
+  look_ahead: 1.2999999523162842, param_path: /home/admin/robotboat/src/mavlink_ajk/param/ajk_param.yaml,
+  shutdown: 0}

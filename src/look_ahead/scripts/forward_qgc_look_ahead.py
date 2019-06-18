@@ -27,8 +27,8 @@ from tf.transformations import quaternion_multiply
 
 SPACING = 0.8       # distance between lines 
 x_tolerance = 0.1  # [meter]
-yaw_tolerance = 40.0 # [Degree]
-yaw_tolerance_onstart = 15.0 # [Degree]
+yaw_tolerance = 180.0 # [Degree]
+yaw_tolerance_onstart = 30.0 # [Degree]
 
 I_CONTROL_DIST = 0.1 # [meter], refer to cross_track_error 
 MAX_PIVOT_COUNT = 1
@@ -46,13 +46,13 @@ FB_OPTIMUM = 220
 LR_OPTIMUM = 60
 
 # for simulator or test vehicle
-CMD_LINEAR_OPT = 0.2
-CMD_ANGULAR_RIGHT = -1
-CMD_ANGULAR_LEFT = 1
-CMD_ANGULAR_LIMIT = 1
+CMD_LINEAR_OPT = 0.5
+CMD_ANGULAR_RIGHT = -0.5
+CMD_ANGULAR_LEFT = 0.5
+CMD_ANGULAR_LIMIT = 0.5
 
 # frequency [Hz]
-frequency = 10
+frequency = 5
 
 # MAVLink number
 MAV_CMD_NAV_WAYPOINT = 16
@@ -165,11 +165,12 @@ class look_ahead():
         self.iTOW = msg.iTOW
         self.rtk_status = msg.fix_status
 
-    def self.relposned_callback(self, msg):
+    def relposned_callback(self, msg):
         self.movingbase_status = msg.fix_status
 
     def cmdvel_publisher(self, steering_ang, translation, pi):
         if abs(steering_ang) > yaw_tolerance and self.bool_start_point == False:
+            #print steering_ang
             if steering_ang >= 0:
                 self.cmdvel.linear.x = 0
                 self.cmdvel.angular.z = CMD_ANGULAR_LEFT
@@ -199,9 +200,9 @@ class look_ahead():
             self.cmdvel.angular.z = -CMD_ANGULAR_LIMIT
 
         # emergency stop
-        if self.rtk_status < FIXED_NUM or self.movingbase_status < FIXED_NUM:
-            self.cmdvel.linear.x = 0
-            self.cmdvel.angular.z = 0
+        #if self.rtk_status < FIXED_NUM: #or self.movingbase_status < FIXED_NUM:
+        #    self.cmdvel.linear.x = 0
+        #    self.cmdvel.angular.z = 0
             
         self.cmdvel_pub.publish(self.cmdvel)
 
