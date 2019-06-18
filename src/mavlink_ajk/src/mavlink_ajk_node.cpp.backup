@@ -237,7 +237,7 @@ int main(int argc, char **argv){
 
             /* send mission_current */
             if (base_mode == ARDUPILOT_GUIDED_ARMED){
-                if (listener.current_seq+1 == mission_total_seq){
+                if (listener.current_seq >= mission_total_seq){
                     base_mode = ARDUPILOT_GUIDED_DISARMED;
                     mission_start = false;
                 }

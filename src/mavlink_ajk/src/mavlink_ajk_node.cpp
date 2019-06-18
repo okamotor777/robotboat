@@ -148,6 +148,8 @@ int main(int argc, char **argv){
     uint16_t len;
     int i = 0;
     unsigned int temp = 0;
+
+    bool is_mission_req = false;
     unsigned int mission_total_seq = 0;
     unsigned int mission_seq = 0;
     int pre_mission_seq = -1;
@@ -302,8 +304,10 @@ int main(int argc, char **argv){
             pub_modes.publish(modes_rosmsg);
 
             /* send mission_current */
+            std::cout << listener.current_seq << std::endl;
+            std::cout << mission_total_seq << std::endl;
             if (base_mode == ARDUPILOT_GUIDED_ARMED){
-                if (listener.current_seq+1 == mission_total_seq){
+                if (listener.current_seq > mission_total_seq){
                     base_mode = ARDUPILOT_GUIDED_DISARMED;
                     mission_start = false;
                 }
@@ -324,7 +328,7 @@ int main(int argc, char **argv){
         }
 
         /* Mission Request */
-        if (mission_total_seq > 0 && microsSinceEpoch() - pre_request_time > request_interval){
+        if (is_mission_req == true && microsSinceEpoch() - pre_request_time > request_interval){
             //printf("request\n");
             //std::cout << microsSinceEpoch() - pre_request_time << std::endl;
             mavlink_msg_mission_request_int_pack(1, 200, &mavmsg, 0, 0, mission_seq);
@@ -449,6 +453,7 @@ int main(int argc, char **argv){
                 printf("mission count was received\n");
                     
                 mavlink_msg_mission_count_decode(&mavmsg, &mavmc);
+                is_mission_req = true;
                 mission_total_seq = mavmc.count;
                 mission_seq = 0;
                 printf("%i\n", mission_total_seq);
@@ -516,12 +521,12 @@ int main(int argc, char **argv){
                 }
 
                 // if mission sequence is end, send mission ack
-                if (mission_seq == mission_total_seq){
+                if (is_mission_req == true && mission_seq == mission_total_seq){
                     mavlink_msg_mission_ack_pack(1, 200, &mavmsg, 0, 0, MAV_MISSION_TYPE_MISSION);
                     len = mavlink_msg_to_send_buffer(buf, &mavmsg);
                     bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, 
                                         sizeof(struct sockaddr_in));
-                    mission_total_seq = 0;
+                    is_mission_req = false;
                 }
                 break;
             }
