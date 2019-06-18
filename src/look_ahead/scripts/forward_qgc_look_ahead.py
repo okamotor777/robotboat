@@ -30,7 +30,7 @@ x_tolerance = 0.1  # [meter]
 yaw_tolerance = 180.0 # [Degree]
 yaw_tolerance_onstart = 30.0 # [Degree]
 
-I_CONTROL_DIST = 0.1 # [meter], refer to cross_track_error 
+I_CONTROL_DIST = 0.3 # [meter], refer to cross_track_error 
 MAX_PIVOT_COUNT = 1
 
 # translation value
@@ -219,7 +219,6 @@ class look_ahead():
         look_ahead_dist = 0
         self.last_steering_ang = 0
         self.pivot_count = 0
-        flip_flag = 1
         while not rospy.is_shutdown():
             # mission checker
             if self.waypoint_total_seq != len(self.waypoint_seq) or self.waypoint_total_seq == 0:
@@ -366,22 +365,19 @@ class look_ahead():
 
                     if np.linalg.norm(a-b) < SPACING:
                         seq = seq + 1
-                        flip_flag = flip_flag * -1
                 except IndexError:
                     pass
 
             if seq >= len(self.waypoint_x):
-                self.ajk_value.stamp = rospy.Time.now()
-                self.ajk_value.translation = TRANSLATION_NEUTRAL
-                self.ajk_value.steering = STEERING_NEUTRAL
-                self.ajk_pub.publish(self.ajk_value)
+                self.auto_log.waypoint_seq = 65535
+                self.auto_log_pub.publish(self.auto_log)
 
                 self.cmdvel.linear.x = 0
                 self.cmdvel.angular.z = 0
                 self.cmdvel_pub.publish(self.cmdvel)
                 seq = 1
                 print "mission_end"
-                break
+                time.sleep(5)
 
             rr.sleep()
   
