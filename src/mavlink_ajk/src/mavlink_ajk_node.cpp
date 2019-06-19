@@ -52,13 +52,11 @@
 #define COMMON_INTERVAL 1000000
 #define LIGHT_INTERVAL 100000
 
-#define NOT_SAVED_PARAM "shutdown"
-
 /* Joystick */
 #define JOY_YAW_NEUTRAL 0
 #define JOY_TH_NEUTRAL 500
 #define JOY_THRESHOLD 10
-
+#define NOT_SAVED_PARAM "shutdown"
 using namespace std;
 
 uint64_t microsSinceEpoch();
@@ -94,8 +92,8 @@ public:
     float Ki_value;
     float Kd_value;
     float look_ahead_value;
-    float shutdown_value;
-    float ajk_engine_value;
+    float i_control_dist_value;
+    float i_limit_value;
 };
 
 void Listener::gnss_callback(const ubx_analyzer::UTMHP::ConstPtr& msg){
@@ -130,8 +128,8 @@ void QGC_parameter::parameter_getter(){
     ros::param::get("/mavlink_ajk/Ki", Ki_value);
     ros::param::get("/mavlink_ajk/Kd", Kd_value);
     ros::param::get("/mavlink_ajk/look_ahead", look_ahead_value);
-    ros::param::get("/mavlink_ajk/shutdown", shutdown_value);
-    ros::param::get("/mavlink_ajk/ajk_engine",  ajk_engine_value);
+    ros::param::get("/mavlink_ajk/i_control_dist", i_control_dist_value);
+    ros::param::get("/mavlink_ajk/i_limit",  i_limit_value);
 }
 
 int main(int argc, char **argv){
@@ -150,7 +148,7 @@ int main(int argc, char **argv){
     unsigned int temp = 0;
 
     bool is_mission_req = false;
-    unsigned int mission_total_seq = 0;
+    int mission_total_seq = 0;
     unsigned int mission_seq = 0;
     int pre_mission_seq = -1;
 
@@ -210,9 +208,9 @@ int main(int argc, char **argv){
     /* ROS parameters */
     std::string param_path;
     ros::param::get("~param_path", param_path);
+    ros::param::get("/mission_total_seq", mission_total_seq);
     qgc_param.parameter_getter();
-    ros::param::set("/mavlink_ajk/shutdown", 0);
-    //printf("%f,%f,%f", qgc_param.Kp_value, qgc_param.Kd_value, qgc_param.look_ahead_value);
+    //printf("%i", mission_total_seq);
     char rosdump_cmd[100];
     sprintf(rosdump_cmd, "rosparam dump -v %s /mavlink_ajk", param_path.c_str());
     system(rosdump_cmd);
@@ -354,7 +352,6 @@ int main(int argc, char **argv){
             ros::param::set(param_cmd, parameter_value);
 
             if (strcmp(parameter_id, NOT_SAVED_PARAM)){
-                ros::param::set("/mavlink_ajk/shutdown", 0); // shutdown parameter must not save
                 sprintf(rosdump_cmd, "rosparam dump -v %s /mavlink_ajk", param_path.c_str());
                 system(rosdump_cmd);
             }
@@ -424,12 +421,12 @@ int main(int argc, char **argv){
                 bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, 
                                     sizeof(struct sockaddr_in));
                 usleep(LIGHT_INTERVAL);
-                mavlink_msg_param_value_pack(1, 1, &mavmsg, "shutdown", qgc_param.shutdown_value, MAVLINK_TYPE_FLOAT, 6, 4);
+                mavlink_msg_param_value_pack(1, 1, &mavmsg, "i_control_dist", qgc_param.i_control_dist_value, MAVLINK_TYPE_FLOAT, 6, 4);
                 len = mavlink_msg_to_send_buffer(buf, &mavmsg);
                 bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, 
                                     sizeof(struct sockaddr_in));
                 usleep(LIGHT_INTERVAL);
-                mavlink_msg_param_value_pack(1, 1, &mavmsg, "ajk_engine", qgc_param.ajk_engine_value, MAVLINK_TYPE_FLOAT, 6, 5);
+                mavlink_msg_param_value_pack(1, 1, &mavmsg, "i_limit", qgc_param.i_limit_value, MAVLINK_TYPE_FLOAT, 6, 5);
                 len = mavlink_msg_to_send_buffer(buf, &mavmsg);
                 bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, 
                                     sizeof(struct sockaddr_in));
@@ -526,6 +523,10 @@ int main(int argc, char **argv){
                     len = mavlink_msg_to_send_buffer(buf, &mavmsg);
                     bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, 
                                         sizeof(struct sockaddr_in));
+
+                    ros::param::set("/mission_total_seq", mission_total_seq);                    
+
+                    // mission request is end
                     is_mission_req = false;
                 }
                 break;
