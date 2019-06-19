@@ -12,8 +12,11 @@ from geometry_msgs.msg import Vector3
 MAX_SPEED = 1000
 MAX_TURN = 1000
 
+#SERIAL_MODE = "^00 01" + '\r'
+#SERIAL_MODE = '\r'
+
 # begin the connection to the roboteq controller
-port = rospy.get_param('~port', '/dev/serial/by-path/pci-0000:00:14.0-usb-0:2:1.0'')
+port = rospy.get_param('~port', '/dev/serial/by-id/usb-Roboteq_Motor_Controller_RCB500-if00')
 class roboteq():
     def __init__(self):
         try:
@@ -58,7 +61,17 @@ class roboteq():
     def loop(self):
         rate=rospy.Rate(1)
         while not rospy.is_shutdown():
-            print self.ser.writable()
+            #print self.ser.readline()
+            #self.ser.write(SERIAL_MODE)
+            #self.ser.flush()
+            try:
+                self.ser.readline()
+
+            except serial.serialutil.SerialException:
+                rospy.logerr("serial exception")
+                exit()
+
+            self.ser.readline()
             rate.sleep()
 
 if __name__ == "__main__":
