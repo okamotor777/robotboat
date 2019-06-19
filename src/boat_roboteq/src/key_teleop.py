@@ -11,8 +11,8 @@ from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 
 def teleop():
-    linear_value = 0.50
-    angular_value = 0.50
+    linear_value = 0.15
+    angular_value = 0.15
 
     while not rospy.is_shutdown():
         kb = input()

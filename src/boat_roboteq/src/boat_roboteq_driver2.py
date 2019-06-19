@@ -13,16 +13,13 @@ MAX_SPEED = 1000
 MAX_TURN = 1000
 
 # begin the connection to the roboteq controller
-port = rospy.get_param('~port', '/dev/serial/by-path/pci-0000:00:14.0-usb-0:2:1.0')
+port = rospy.get_param('~port', '/dev/serial/by-path/pci-0000:00:14.0-usb-0:2:1.0'')
 class roboteq():
     def __init__(self):
         try:
             self.ser = serial.Serial(
             port,
-            baudrate=115200, #8N1
-            #parity=serial.PARITY_NONE,
-            #stopbits=serial.STOPBITS_ONE,
-            #bytesize=serial.EIGHTBITS,
+            baudrate=115200, 
             timeout=0.05,
             writeTimeout=0.05
         )
@@ -36,9 +33,6 @@ class roboteq():
     #    ser.close()
     #ser.open()
 
-# function moveCallback
-# takes the /cmd_vel data as input
-# returns nothing
     def moveCallback(self, data):
         if (abs(data.linear.x) > 0.001 or abs(data.angular.z) > 0.001):
             speed = data.linear.x *MAX_SPEED #linear.x is value between -1 and 1 and input to wheels is between -1000 and 1000
@@ -54,21 +48,18 @@ class roboteq():
                 turn = -MAX_TURN
 
             self.speed_cmd = '!G 1 ' + str(-speed) + '\r'
-
             self.turn_cmd = '!G 2 ' + str(turn) + '\r'
-    def loop(self):
-        rate=rospy.Rate(10)
-        while not rospy.is_shutdown():
-            try:
-                self.speed_cmd
-                self.turn_cmd
-            except AttributeError:
-                continue 
-            rate.sleep()
+
             self.ser.write(self.speed_cmd)
             self.ser.flush()
             self.ser.write(self.turn_cmd)
             self.ser.flush()
+
+    def loop(self):
+        rate=rospy.Rate(1)
+        while not rospy.is_shutdown():
+            print self.ser.writable()
+            rate.sleep()
 
 if __name__ == "__main__":
     # start the roboteq node
