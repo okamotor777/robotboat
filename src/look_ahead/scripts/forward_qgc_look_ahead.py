@@ -30,7 +30,6 @@ x_tolerance = 0.1  # [meter]
 yaw_tolerance = 180.0 # [Degree]
 yaw_tolerance_onstart = 30.0 # [Degree]
 
-I_CONTROL_DIST = 0.3 # [meter], refer to cross_track_error 
 MAX_PIVOT_COUNT = 1
 
 # translation value
@@ -46,10 +45,10 @@ FB_OPTIMUM = 220
 LR_OPTIMUM = 60
 
 # for simulator or test vehicle
-CMD_LINEAR_OPT = 0.5
-CMD_ANGULAR_RIGHT = -0.5
-CMD_ANGULAR_LEFT = 0.5
-CMD_ANGULAR_LIMIT = 0.5
+CMD_LINEAR_OPT = 0.6
+CMD_ANGULAR_RIGHT = -0.6
+CMD_ANGULAR_LEFT = 0.6
+CMD_ANGULAR_LIMIT = 0.6
 
 # frequency [Hz]
 frequency = 5
@@ -217,6 +216,8 @@ class look_ahead():
         KD = 0
         d = 0
         look_ahead_dist = 0
+        i_control_dist = 0
+        i_limit = 0
         self.last_steering_ang = 0
         self.pivot_count = 0
         while not rospy.is_shutdown():
@@ -247,6 +248,8 @@ class look_ahead():
             KI = rospy.get_param("/mavlink_ajk/Ki")
             KD = rospy.get_param("/mavlink_ajk/Kd")
             look_ahead_dist = rospy.get_param("/mavlink_ajk/look_ahead")
+            i_control_dist = rospy.get_param("/mavlink_ajk/i_control_dist")
+            i_limit = rospy.get_param("/mavlink_ajk/i_limit")
 
             # waypoint with xy coordinate origin adjust
             if seq == 0:
@@ -298,21 +301,23 @@ class look_ahead():
             steering_ang = front_steering_ang
             translation = FORWARD_CONST
 
-            # calculate the steering_value
+            # calculate PID control value
             p = KP *steering_ang
             i = KI *own_y_tf
+            if i > i_limit:
+                i = i_limit
             d = KD *(self.last_steering_ang - steering_ang)
             self.last_steering_ang = steering_ang
 
-            pi_value = p
-            if abs(own_y_tf) < I_CONTROL_DIST:
-                pi_value = p - i
+            pid_value = p
+            if abs(own_y_tf) < i_control_dist:
+                pid_value = p - i
 
-            pi_value = pi_value - d
+            pid_value = pid_value - d
             
               
             # for simulator
-            self.cmdvel_publisher(steering_ang, translation, pi_value)
+            self.cmdvel_publisher(steering_ang, translation, pid_value)
 
             # publish autonomous log
             self.auto_log.stamp = rospy.Time.now()
