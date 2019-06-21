@@ -48,6 +48,9 @@
 #define ARDUPILOT_GUIDED_ARMED 217
 #define ARDUPILOT_GUIDED_DISARMED 89
 
+/* ESTIMATOR_STATUS_FLAG */
+#define GOOD_ESTIMATOR_ATTITUDE 1
+
 /* Interval */
 #define COMMON_INTERVAL 1000000
 #define LIGHT_INTERVAL 100000
@@ -79,9 +82,12 @@ public:
 
     void auto_log_callback(const look_ahead::Auto_Log::ConstPtr& msg);
     int current_seq = 0;
+    float cross_track_error = 0;
+    float angular_z = 0;
 
     void move_base_callback(const ubx_analyzer::RELPOSNED::ConstPtr& msg);
     double yaw;
+    uint16_t move_base_fix_status = 0;
 };
 
 class QGC_parameter{
@@ -117,10 +123,23 @@ void Listener::gnss_callback(const ubx_analyzer::UTMHP::ConstPtr& msg){
 
 void Listener::auto_log_callback(const look_ahead::Auto_Log::ConstPtr& msg){
     current_seq = msg->waypoint_seq;
+    cross_track_error = msg->cross_track_error;
+    angular_z = msg->angular_z;
 }
 
 void Listener::move_base_callback(const ubx_analyzer::RELPOSNED::ConstPtr& msg){
     yaw = msg->QGC_heading;
+    switch(msg->fix_status){
+        case 2:
+            move_base_fix_status = GOOD_ESTIMATOR_ATTITUDE;
+            break;
+        case 1:
+            move_base_fix_status = 0;
+            break;
+        case 0:
+            move_base_fix_status = 0;
+            break;
+    }
 }
 
 void QGC_parameter::parameter_getter(){
@@ -290,6 +309,12 @@ int main(int argc, char **argv){
             mavlink_msg_gps_raw_int_pack(1, 200, &mavmsg, 0, listener.fix_type, 
                                          listener.lat, listener.lon, listener.alt, 65535, 65535, 
                                          65535, 65535, listener.satellites);
+            len = mavlink_msg_to_send_buffer(buf, &mavmsg);
+            bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, sizeof(struct sockaddr_in));
+
+            /* Send ESTIMATOR_STATUS */
+            mavlink_msg_estimator_status_pack(1, 200, &mavmsg, microsSinceEpoch(), listener.move_base_fix_status,
+                                              listener.angular_z, 0, 0, 0, 0, 0, listener.cross_track_error, 0);
             len = mavlink_msg_to_send_buffer(buf, &mavmsg);
             bytes_sent = sendto(sock, buf, len, 0, (struct sockaddr*)&gcAddr, sizeof(struct sockaddr_in));
 
