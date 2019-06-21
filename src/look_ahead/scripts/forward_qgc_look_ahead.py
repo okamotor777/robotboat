@@ -76,7 +76,7 @@ class look_ahead():
         self.q = np.empty(4)
         self.yaw = np.pi/2
         self.pre_steering_ang = 0
-        self.bool_start_point = False
+        self.bool_start_point = True
 
         # mav_modes
         self.mission_start = False
