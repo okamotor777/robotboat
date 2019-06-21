@@ -23,6 +23,8 @@ float64 Kp
 float64 Ki
 float64 Kd
 float64 look_ahead_dist
+float64 i_control_dist
+float64 i_limit
 
 float64 p
 float64 i

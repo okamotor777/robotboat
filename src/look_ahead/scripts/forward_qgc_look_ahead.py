@@ -46,6 +46,7 @@ LR_OPTIMUM = 60
 
 # for simulator or test vehicle
 CMD_LINEAR_OPT = 0.6
+#CMD_LINEAR_OPT = 0.2
 CMD_ANGULAR_RIGHT = -0.6
 CMD_ANGULAR_LEFT = 0.6
 CMD_ANGULAR_LIMIT = 0.6
@@ -231,6 +232,9 @@ class look_ahead():
             # mission_start checker(origin from MAV_CMD_MISSION_START)
             if self.mission_start != True or self.base_mode != ARDUPILOT_AUTO_BASE \
             or self.custom_mode != ARDUPILOT_AUTO_CUSTOM:
+                # reset current_seq in mavlink_ajk_node
+                self.auto_log.waypoint_seq = 0
+                self.auto_log_pub.publish(self.auto_log)
                 rospy.loginfo("mission_start_checker")
                 time.sleep(1)
                 continue
@@ -306,6 +310,8 @@ class look_ahead():
             i = KI *own_y_tf
             if i > i_limit:
                 i = i_limit
+            elif i < -i_limit:
+                i = -i_limit
             d = KD *(self.last_steering_ang - steering_ang)
             self.last_steering_ang = steering_ang
 
@@ -344,6 +350,8 @@ class look_ahead():
             self.auto_log.Ki = KI
             self.auto_log.Kd = KD
             self.auto_log.look_ahead_dist = look_ahead_dist
+            self.auto_log.i_control_dist = i_control_dist
+            self.auto_log.i_limit = i_limit
 
             self.auto_log.p = p
             self.auto_log.i = i
