@@ -342,13 +342,13 @@ int main(int argc, char **argv){
         }
 
         /* when the gcs heartbeat was stopped, then DISARM and mission_start is False */
-        if (microsSinceEpoch() - last_gcs_heartbeat_time > gcs_heartbeat_interval){
-            usleep(COMMON_INTERVAL);
-            ROS_INFO("GCS signal was interrupted");
-            //std::cout << "GCS signal was interrupted\n" << std::endl;
-            base_mode = ARDUPILOT_GUIDED_DISARMED;
-            mission_start = false;            
-        }
+        //if (microsSinceEpoch() - last_gcs_heartbeat_time > gcs_heartbeat_interval){
+        //    usleep(COMMON_INTERVAL);
+        //    ROS_INFO("GCS signal was interrupted");
+        //    //std::cout << "GCS signal was interrupted\n" << std::endl;
+        //    base_mode = ARDUPILOT_GUIDED_DISARMED;
+        //    mission_start = false;            
+        //}
 
         /* Mission Request */
         if (is_mission_req == true && microsSinceEpoch() - pre_request_time > request_interval){
