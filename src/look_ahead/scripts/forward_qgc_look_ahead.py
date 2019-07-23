@@ -45,8 +45,6 @@ FB_OPTIMUM = 220
 LR_OPTIMUM = 60
 
 # for simulator or test vehicle
-CMD_LINEAR_OPT = 0.6
-#CMD_LINEAR_OPT = 0.2
 CMD_ANGULAR_RIGHT = -0.6
 CMD_ANGULAR_LEFT = 0.6
 CMD_ANGULAR_LIMIT = 0.6
@@ -170,6 +168,7 @@ class look_ahead():
         self.movingbase_status = msg.fix_status
 
     def cmdvel_publisher(self, steering_ang, translation, pi):
+        mav_linear_velocity = rospy.get_param("/mavlink_ajk/linear_velocity")
         if abs(steering_ang) > yaw_tolerance and self.bool_start_point == False:
             #print steering_ang
             if steering_ang >= 0:
@@ -191,7 +190,7 @@ class look_ahead():
             if abs(steering_ang) < yaw_tolerance_onstart:
                 self.pivot_count = self.pivot_count + 1 
         else:
-            self.cmdvel.linear.x = CMD_LINEAR_OPT*translation
+            self.cmdvel.linear.x = mav_linear_velocity*translation
             self.cmdvel.angular.z = pi
 
         # Angular limit
