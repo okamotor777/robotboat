@@ -103,7 +103,7 @@ class look_ahead():
         self.auto_log_pub = rospy.Publisher('/auto_log', Auto_Log, queue_size = 1)
         self.auto_log = Auto_Log()
         self.cmdvel_pub = rospy.Publisher('/roboteq_driver/cmd', Twist, queue_size = 1)
-        #self.cmdvel_pub = rospy.Publisher('/sim_ajk/diff_drive_controller/cmd_vel', Twist, queue_size = 1)
+        self.sim_cmdvel_pub = rospy.Publisher('/sim_ajk/diff_drive_controller/cmd_vel', Twist, queue_size = 1)
         self.cmdvel = Twist()
 
     def odom_callback(self, msg):
@@ -146,6 +146,7 @@ class look_ahead():
 
         # if msg.seq is 0, then reset variables and receive the new mission's
         if msg.seq == 0:
+            self.seq = 1
             self.waypoint_x = []
             self.waypoint_y = []
             self.waypoint_seq = []
@@ -205,13 +206,14 @@ class look_ahead():
         #    self.cmdvel.angular.z = 0
             
         self.cmdvel_pub.publish(self.cmdvel)
+        self.sim_cmdvel_pub.publish(self.cmdvel)
 
     def shutdown(self):
         print "shutdown"
 
     def loop(self):
         rr = rospy.Rate(frequency)
-        seq = 1
+        self.seq = 1
         KP = 0
         KI = 0
         KD = 0
@@ -224,7 +226,7 @@ class look_ahead():
         while not rospy.is_shutdown():
             # mission checker
             if self.waypoint_total_seq != len(self.waypoint_seq) or self.waypoint_total_seq == 0:
-                seq = 1
+                self.seq = 1
                 rospy.loginfo("mission_checker")
                 time.sleep(1)
                 continue
@@ -256,16 +258,10 @@ class look_ahead():
             i_limit = rospy.get_param("/mavlink_ajk/i_limit")
 
             # waypoint with xy coordinate origin adjust
-            if seq == 0:
-                wp_x_adj = self.waypoint_x[seq] - own_x
-                wp_y_adj = self.waypoint_y[seq] - own_y
-                own_x_adj = 0
-                own_y_adj = 0
-            else:
-                wp_x_adj = self.waypoint_x[seq] - self.waypoint_x[seq-1]
-                wp_y_adj = self.waypoint_y[seq] - self.waypoint_y[seq-1]
-                own_x_adj = own_x - self.waypoint_x[seq-1]
-                own_y_adj = own_y - self.waypoint_y[seq-1]
+            wp_x_adj = self.waypoint_x[self.seq] - self.waypoint_x[self.seq-1]
+            wp_y_adj = self.waypoint_y[self.seq] - self.waypoint_y[self.seq-1]
+            own_x_adj = own_x - self.waypoint_x[self.seq-1]
+            own_y_adj = own_y - self.waypoint_y[self.seq-1]
 
             # coordinate transformation of waypoint
             tf_angle = np.arctan2(wp_y_adj, wp_x_adj)
@@ -331,11 +327,11 @@ class look_ahead():
             self.auto_log.rtk_status = self.rtk_status
             self.auto_log.movingbase_status = self.movingbase_status
 
-            self.auto_log.waypoint_seq = seq
-            self.auto_log.waypoint_start_x = self.waypoint_x[seq-1]
-            self.auto_log.waypoint_start_y = self.waypoint_y[seq-1]
-            self.auto_log.waypoint_end_x = self.waypoint_x[seq]
-            self.auto_log.waypoint_end_y = self.waypoint_y[seq]
+            self.auto_log.waypoint_seq = self.seq
+            self.auto_log.waypoint_start_x = self.waypoint_x[self.seq-1]
+            self.auto_log.waypoint_start_y = self.waypoint_y[self.seq-1]
+            self.auto_log.waypoint_end_x = self.waypoint_x[self.seq]
+            self.auto_log.waypoint_end_y = self.waypoint_y[self.seq]
             self.auto_log.own_x = own_x
             self.auto_log.own_y = own_y
             self.auto_log.own_yaw = euler_from_quaternion(front_q)[2]/np.pi *180
@@ -363,9 +359,9 @@ class look_ahead():
 
             # when reaching the look-ahead distance, read the next waypoint.
             if (wp_x_tf - own_x_tf) < x_tolerance:
-                pre_wp_x = self.waypoint_x[seq]
-                pre_wp_y = self.waypoint_y[seq]
-                seq = seq + 1
+                pre_wp_x = self.waypoint_x[self.seq]
+                pre_wp_y = self.waypoint_y[self.seq]
+                self.seq = self.seq + 1
                 self.bool_start_point = True # Since mission changed to the next path, the start_point flag 
                 self.cmdvel.linear.x = 0
                 self.cmdvel.angular.z = 0
@@ -374,21 +370,21 @@ class look_ahead():
                                              # was changed to True.
                 try:
                     a = np.array([pre_wp_x, pre_wp_y])
-                    b = np.array([self.waypoint_x[seq], self.waypoint_y[seq]])
+                    b = np.array([self.waypoint_x[self.seq], self.waypoint_y[self.seq]])
 
                     if np.linalg.norm(a-b) < SPACING:
-                        seq = seq + 1
+                        self.seq = self.seq + 1
                 except IndexError:
                     pass
 
-            if seq >= len(self.waypoint_x):
+            if self.seq >= len(self.waypoint_x):
                 self.auto_log.waypoint_seq = 65535
                 self.auto_log_pub.publish(self.auto_log)
 
                 self.cmdvel.linear.x = 0
                 self.cmdvel.angular.z = 0
                 self.cmdvel_pub.publish(self.cmdvel)
-                seq = 1
+                self.seq = 1
                 print "mission_end"
                 time.sleep(5)
 
