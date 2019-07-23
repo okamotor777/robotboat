@@ -27,7 +27,7 @@
 /* ROS library */
 #include "ros/ros.h"
 #include "geometry_msgs/Twist.h"
-#include "std_msgs/Int16.h"
+#include "std_msgs/UInt16.h"
 
 /* custom ROS messages */
 #include "mavlink_ajk/MAV_Mission.h"
@@ -223,6 +223,8 @@ int main(int argc, char **argv){
 
     ros::Publisher pub_joystick = n.advertise<mavlink_ajk::MAV_Joystick>("/mav/joystick", 1);
     mavlink_ajk::MAV_Joystick joystick_rosmsg;
+
+    ros::Publisher pub_mission_set_current = n.advertise<std_msgs::UInt16>("/mav/mission_set_current", 10);
 
     while (!ros::ok());
 
@@ -474,6 +476,18 @@ int main(int argc, char **argv){
                 parameter_id = mavps.param_id;
                 parameter_value = mavps.param_value;
                 parameter_type = mavps.param_type;
+                break;
+            }
+
+            case MAVLINK_MSG_ID_MISSION_SET_CURRENT:{ // MAV ID 41
+                mavlink_mission_set_current_t mavmsc;
+                std_msgs::UInt16 mission_set_current;
+                    
+                mavlink_msg_mission_set_current_decode(&mavmsg, &mavmsc);
+                mission_set_current.data = mavmsc.seq;
+
+                pub_mission_set_current.publish(mission_set_current);
+                printf("mission_set_current: %i\n", mavmsc.seq);
                 break;
             }
 
