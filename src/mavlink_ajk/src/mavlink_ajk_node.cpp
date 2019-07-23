@@ -115,7 +115,7 @@ void Listener::gnss_callback(const ubx_analyzer::UTMHP::ConstPtr& msg){
             fix_type = GPS_FIX_TYPE_RTK_FLOAT;
             break;
         case 0:
-            fix_type = GPS_FIX_TYPE_NO_FIX;
+            fix_type = GPS_FIX_TYPE_DGPS_FIX;
             break;
     }
     //ROS_INFO("info [%f]", msg->lat);
