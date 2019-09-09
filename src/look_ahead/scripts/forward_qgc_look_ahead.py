@@ -81,10 +81,13 @@ class look_ahead():
         self.base_mode = 0
         self.custom_mode = 0
 
-        # gnss
+        # related to GNSS
         self.iTOW = 0
         self.rtk_status = 0
         self.movingbase_status = 0
+        self.latitude = 0
+        self.longitude = 0
+        self.last_iTOW = 0
 
         rospy.init_node('look_ahead_following')
         rospy.on_shutdown(self.shutdown)
@@ -163,6 +166,8 @@ class look_ahead():
     def navpvt_callback(self, msg):
         self.iTOW = msg.iTOW
         self.rtk_status = msg.fix_status
+        self.latitude = msg.lat
+        self.longitude = msg.lon
 
     def relposned_callback(self, msg):
         self.movingbase_status = msg.fix_status
@@ -223,6 +228,18 @@ class look_ahead():
         self.last_steering_ang = 0
         self.pivot_count = 0
         while not rospy.is_shutdown():
+            # if the iTOW has not increased, skip subsequent scripts 
+            if self.iTOW - self.last_iTOW > 0:
+                rospy.loginfo("warning: The vaue of the GNSS receiver is not updated")
+                time.sleep(1)
+                continue
+
+            # if the latitude and longitude are abnormal values, skip subsequent scripts 
+            if self.latitude == 0 or self.longitude == 0:
+                rospy.loginfo("warning: latitude or longitude was zero")
+                time.sleep(1)
+                continue
+
             # mission checker
             if self.waypoint_total_seq != len(self.waypoint_seq) or self.waypoint_total_seq == 0:
                 self.seq = 1
@@ -316,9 +333,11 @@ class look_ahead():
 
             pid_value = pid_value - d
             
-              
             # for simulator
             self.cmdvel_publisher(steering_ang, translation, pid_value)
+
+            # save the last value of GNSS relative
+            self.last_iTOW = self.iTOW
 
             # publish autonomous log
             self.auto_log.stamp = rospy.Time.now()
