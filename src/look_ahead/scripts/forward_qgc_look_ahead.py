@@ -87,7 +87,6 @@ class look_ahead():
         self.movingbase_status = 0
         self.latitude = 0
         self.longitude = 0
-        self.last_iTOW = 0
 
         rospy.init_node('look_ahead_following')
         rospy.on_shutdown(self.shutdown)
@@ -225,14 +224,18 @@ class look_ahead():
         look_ahead_dist = 0
         i_control_dist = 0
         i_limit = 0
+        last_iTOW = 0
         self.last_steering_ang = 0
         self.pivot_count = 0
         while not rospy.is_shutdown():
             # if the iTOW has not increased, skip subsequent scripts 
-            if self.iTOW - self.last_iTOW > 0:
-                rospy.loginfo("warning: The vaue of the GNSS receiver is not updated")
+            if self.iTOW - last_iTOW == 0:
+                rospy.loginfo("warning: The value of the GNSS receiver is not updated")
                 time.sleep(1)
                 continue
+
+            # save the last value of iTOW(GNSS time)
+            last_iTOW = self.iTOW
 
             # if the latitude and longitude are abnormal values, skip subsequent scripts 
             if self.latitude == 0 or self.longitude == 0:
@@ -335,9 +338,6 @@ class look_ahead():
             
             # for simulator
             self.cmdvel_publisher(steering_ang, translation, pid_value)
-
-            # save the last value of GNSS relative
-            self.last_iTOW = self.iTOW
 
             # publish autonomous log
             self.auto_log.stamp = rospy.Time.now()
