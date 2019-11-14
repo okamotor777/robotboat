@@ -16,7 +16,7 @@ MAX_TURN = 1000
 #SERIAL_MODE = '\r'
 
 # begin the connection to the roboteq controller
-port = rospy.get_param('~port', '/dev/serial/by-id/usb-Roboteq_Motor_Controller_RCB500-if00')
+port = rospy.get_param('~port', '/dev/motor')
 class roboteq():
     def __init__(self):
         try:
