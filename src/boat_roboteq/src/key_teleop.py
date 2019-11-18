@@ -23,25 +23,30 @@ def teleop():
             exit()
 
         elif str(kb) == "w":    # forward
-            twist.twist.linear.x = linear_value; twist.twist.linear.y = 0; twist.twist.linear.z = 0;
+            twist.twist.linear.x = linear_value; twist.twist.linear.y = 0; 
+            twist.twist.linear.z = 0;
             twist.twist.angular.x = 0; twist.twist.angular.y = 0; twist.twist.angular.z = 0;
             pub.publish(twist)
             pub_str.publish("straight")
 
         elif str(kb) == "a":    # left
                        twist.twist.linear.x = linear_value; twist.twist.linear.y = 0; twist.twist.linear.z = 0;
-            twist.twist.angular.x = 0; twist.twist.angular.y = 0; twist.twist.angular.z = angular_value;
+            twist.twist.angular.x = 0; twist.twist.angular.y = 0; 
+            twist.twist.angular.z = angular_value;
             pub.publish(twist)
 
         elif str(kb) == "s":    # backward
-            twist.twist.linear.x = -linear_value; twist.twist.linear.y = 0; twist.twist.linear.z = 0;
+            twist.twist.linear.x = -linear_value; twist.twist.linear.y = 0; 
+            twist.twist.linear.z = 0;
             twist.twist.angular.x = 0; twist.twist.angular.y = 0; twist.twist.angular.z = 0;
             pub.publish(twist)
             pub_str.publish("straight")
 
         elif str(kb) == "d":    # right
-                        twist.twist.linear.x = linear_value; twist.twist.linear.y = 0; twist.twist.linear.z = 0;
-            twist.twist.angular.x = 0; twist.twist.angular.y = 0; twist.twist.angular.z = -angular_value;
+            twist.twist.linear.x = linear_value; twist.twist.linear.y = 0; 
+            twist.twist.linear.z = 0;
+            twist.twist.angular.x = 0; twist.twist.angular.y = 0; 
+            twist.twist.angular.z = -angular_value;
             pub.publish(twist)
 
     
