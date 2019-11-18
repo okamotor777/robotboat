@@ -9,9 +9,9 @@ from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from geometry_msgs.msg import Vector3
-
-MAX_SPEED = 1000
-MAX_TURN = 1000
+from geometry_msgs.msg import TwistStamped
+MAX_SPEED = 300
+MAX_TURN = 300
 
 #SERIAL_MODE = "^00 01" + '\r'
 #SERIAL_MODE = '\r'
@@ -31,21 +31,21 @@ class roboteq():
             rospy.logerr("port not found")
             sys.exit()
 
-        rospy.Subscriber("roboteq_driver/cmd", Twist, self.moveCallback, queue_size=1)
+        rospy.Subscriber("twist_cmd", TwistStamped, self.moveCallback, queue_size=1)
     # reset the connection if need be
     #if (ser.isOpen()):
     #    ser.close()
     #ser.open()
 
     def moveCallback(self, data):
-        if (abs(data.linear.x) > 0.001 or abs(data.angular.z) > 0.001):
-            speed = data.linear.x *MAX_SPEED #linear.x is value between -1 and 1 and input to wheels is between -1000 and 1000
+        if (abs(data.twist.linear.x) > 0.001 or abs(data.twist.angular.z) > 0.001):
+            speed = data.twist.linear.x *MAX_SPEED #linear.x is value between -1 and 1 and input to wheels is between -1000 and 1000
             if speed > MAX_SPEED:
                 speed = MAX_SPEED
             elif speed < -MAX_SPEED:
                 speed = -MAX_SPEED
                                             #1000 would give full speed range, but setting to lower value to better control robot
-            turn = (data.angular.z + 0.009)*MAX_TURN*-1
+            turn = (data.twist.angular.z + 0.009)*MAX_TURN*-1
             if turn > MAX_TURN:
                 turn = MAX_TURN
             elif turn < -MAX_TURN:
