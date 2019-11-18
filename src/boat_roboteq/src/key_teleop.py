@@ -7,63 +7,44 @@ import select
 import termios
 import time
 
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import TwistStamped
 from std_msgs.msg import String
 
 def teleop():
     linear_value = 0.15
-    angular_value = 0.15
+    
 
     while not rospy.is_shutdown():
         kb = input()
-        twist = Twist()
+        twist = TwistStamped()
     
         if str(kb) == '0':
             print("exit")
             exit()
 
         elif str(kb) == "w":    # forward
-            twist.linear.x = linear_value; twist.linear.y = 0; twist.linear.z = 0;
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 0;
+            twist.twist.linear.x = linear_value; twist.twist.linear.y = 0; twist.twist.linear.z = 0;
+            twist.twist.angular.x = 0; twist.twist.angular.y = 0; twist.twist.angular.z = 0;
             pub.publish(twist)
             pub_str.publish("straight")
 
         elif str(kb) == "a":    # left
-            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0;
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = angular_value;
+                       twist.twist.linear.x = linear_value; twist.twist.linear.y = 0; twist.twist.linear.z = 0;
+            twist.twist.angular.x = 0; twist.twist.angular.y = 0; twist.twist.angular.z = angular_value;
             pub.publish(twist)
 
         elif str(kb) == "s":    # backward
-            twist.linear.x = -linear_value; twist.linear.y = 0; twist.linear.z = 0;
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 0;
+            twist.twist.linear.x = -linear_value; twist.twist.linear.y = 0; twist.twist.linear.z = 0;
+            twist.twist.angular.x = 0; twist.twist.angular.y = 0; twist.twist.angular.z = 0;
             pub.publish(twist)
             pub_str.publish("straight")
 
         elif str(kb) == "d":    # right
-            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0;
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -angular_value;
+                        twist.twist.linear.x = linear_value; twist.twist.linear.y = 0; twist.twist.linear.z = 0;
+            twist.twist.angular.x = 0; twist.twist.angular.y = 0; twist.twist.angular.z = -angular_value;
             pub.publish(twist)
 
-        elif str(kb) == "e":    # right forward
-            twist.linear.x = linear_value; twist.linear.y = 0; twist.linear.z = 0;
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -angular_value;
-            pub.publish(twist)
-
-        elif str(kb) == "q":    # left forward
-            twist.linear.x = linear_value; twist.linear.y = 0; twist.linear.z = 0;
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = angular_value;
-            pub.publish(twist)
-
-        elif str(kb) == "z":    # left backward
-            twist.linear.x = -linear_value; twist.linear.y = 0; twist.linear.z = 0;
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = angular_value;
-            pub.publish(twist)
-
-        elif str(kb) == "c":    # right backward
-            twist.linear.x = -linear_value; twist.linear.y = 0; twist.linear.z = 0;
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -angular_value;
-            pub.publish(twist)
-
+    
         elif str(kb) == "i":    # linear speed increase
             linear_value = linear_value + 0.05
         elif str(kb) == "o":    # linear speed decrease
@@ -103,7 +84,7 @@ def input():
 
 if __name__=="__main__":
     #pub = rospy.Publisher('/sim_ajk/diff_drive_controller/cmd_vel', Twist, queue_size = 1)
-    pub = rospy.Publisher('/roboteq_driver/cmd', Twist, queue_size = 1)
+    pub = rospy.Publisher('twist_cmd', TwistStamped, queue_size = 1)
 
     rospy.init_node('teleop_twist_keyboard')
     pub_str = rospy.Publisher('/straight_str', String, queue_size = 1)
