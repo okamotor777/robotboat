@@ -12,6 +12,7 @@ from std_msgs.msg import String
 
 def teleop():
     linear_value = 0.15
+    angular_value = 0.15
     
 
     while not rospy.is_shutdown():
@@ -30,7 +31,7 @@ def teleop():
             pub_str.publish("straight")
 
         elif str(kb) == "a":    # left
-                       twist.twist.linear.x = linear_value; twist.twist.linear.y = 0; twist.twist.linear.z = 0;
+            twist.twist.linear.x = 0; twist.twist.linear.y = 0; twist.twist.linear.z = 0;
             twist.twist.angular.x = 0; twist.twist.angular.y = 0; 
             twist.twist.angular.z = angular_value;
             pub.publish(twist)
@@ -61,8 +62,8 @@ def teleop():
 
 
         elif kb == None:
-            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0;
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 0;
+            twist.twist.linear.x = 0; twist.twist.linear.y = 0; twist.twist.linear.z = 0;
+            twist.twist.angular.x = 0; twist.twist.angular.y = 0; twist.twist.angular.z = 0;
             pub.publish(twist)       
 
         time.sleep(0.01)
