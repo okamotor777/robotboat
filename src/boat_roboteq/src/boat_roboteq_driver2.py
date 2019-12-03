@@ -10,8 +10,6 @@ from geometry_msgs.msg import Twist
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import TwistStamped
-from sensor_msgs.msg import LaserScan
-
 MAX_SPEED = 300
 MAX_TURN = 300
 
@@ -40,40 +38,27 @@ class roboteq():
     #ser.open()
 
     def moveCallback(self, data):
-        if msg.ranges[360] < 0.5:
-            data.twist.linear.x = 0
-            speed = data.twist.linear.x
-            move.twist.angular.z = 0
-            turn = data.twist.anglar.z
+        if (abs(data.twist.linear.x) > 0.001 or abs(data.twist.angular.z) > 0.001):
+            speed = data.twist.linear.x *MAX_SPEED #linear.x is value between -1 and 1 and input to wheels is between -1000 and 1000
+            if speed > MAX_SPEED:
+                speed = MAX_SPEED
+            elif speed < -MAX_SPEED:
+                speed = -MAX_SPEED
+                                            #1000 would give full speed range, but setting to lower value to better control robot
+            turn = (data.twist.angular.z + 0.009)*MAX_TURN*-1
+            if turn > MAX_TURN:
+                turn = MAX_TURN
+            elif turn < -MAX_TURN:
+                turn = -MAX_TURN
+
             self.speed_cmd = '!G 1 ' + str(-speed) + '\r'
             self.turn_cmd = '!G 2 ' + str(turn) + '\r'
+
             self.ser.write(self.speed_cmd)
             self.ser.flush()
             self.ser.write(self.turn_cmd)
             self.ser.flush()
 
-        else:
-            if (abs(data.twist.linear.x) > 0.001 or abs(data.twist.angular.z) > 0.001):
-                speed = data.twist.linear.x *MAX_SPEED #linear.x is value between -1 and 1 and input to wheels is between -1000 and 1000
-                if speed > MAX_SPEED:
-                    speed = MAX_SPEED
-                elif speed < -MAX_SPEED:
-                    speed = -MAX_SPEED
-                                            #1000 would give full speed range, but setting to lower value to better control robot
-                turn = (data.twist.angular.z + 0.009)*MAX_TURN*-1
-                if turn > MAX_TURN:
-                    turn = MAX_TURN
-                elif turn < -MAX_TURN:
-                    turn = -MAX_TURN
-
-                self.speed_cmd = '!G 1 ' + str(-speed) + '\r'
-                self.turn_cmd = '!G 2 ' + str(turn) + '\r'
-                self.ser.write(self.speed_cmd)
-                self.ser.flush()
-                self.ser.write(self.turn_cmd)
-                self.ser.flush()
-
-       
     def loop(self):
         rate=rospy.Rate(1)
         while not rospy.is_shutdown():
@@ -81,7 +66,7 @@ class roboteq():
             #self.ser.write(SERIAL_MODE)
             #self.ser.flush()
             try:
-           klkpkko     self.ser.readline()
+                self.ser.readline()
 
             except serial.serialutil.SerialException:
                 rospy.logerr("serial exception")
